@@ -30,6 +30,21 @@ export default function Register() {
     }
   };
 
+  const handleGuestLogin = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/auth/guest`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        login(data.token, data.user);
+        navigate('/lobby');
+      } else {
+        setError(data.error);
+      }
+    } catch (err) {
+      setError('Network error');
+    }
+  };
+
   return (
     <div className="auth-container">
       <div className="auth-box">
@@ -52,7 +67,8 @@ export default function Register() {
             onChange={e => setPassword(e.target.value)} 
             required 
           />
-          <button type="submit" className="btn-primary" style={{ width: '100%' }}>Sign Up</button>
+          <button type="submit" className="btn-primary" style={{ width: '100%', marginBottom: '1rem' }}>Sign Up</button>
+          <button type="button" onClick={handleGuestLogin} className="btn-secondary" style={{ width: '100%', background: '#333', color: 'white', border: '1px solid #555', padding: '12px', borderRadius: '4px', cursor: 'pointer' }}>Play as Guest</button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '1rem' }}>
           Already have an account? <Link to="/login" style={{ color: 'var(--brand)' }}>Login</Link>

@@ -59,11 +59,26 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+app.post('/api/auth/guest', (req, res) => {
+  try {
+    const guestId = 'guest_' + Math.random().toString(36).substring(2, 10);
+    const guestUsername = 'Guest_' + Math.floor(1000 + Math.random() * 9000);
+    
+    const token = jwt.sign({ userId: guestId, username: guestUsername }, JWT_SECRET);
+    res.json({ token, user: { id: guestId, username: guestUsername, wins: 0, losses: 0 } });
+  } catch (err) {
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 app.get('/api/users/me', async (req, res) => {
   const token = req.headers.authorization?.split(' ')[1];
   if (!token) return res.status(401).json({ error: 'No token' });
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
+    if (typeof decoded.userId === 'string' && decoded.userId.startsWith('guest_')) {
+      return res.json({ user: { id: decoded.userId, username: decoded.username, wins: 0, losses: 0 } });
+    }
     const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json({ user: { id: user.id, username: user.username, wins: user.wins, losses: user.losses } });
@@ -161,8 +176,12 @@ io.on('connection', (socket) => {
           const winnerId = room.players[winnerColor];
           const loserId = room.players[loserColor];
 
-          if (winnerId) await prisma.user.update({ where: { id: winnerId }, data: { wins: { increment: 1 } } });
-          if (loserId) await prisma.user.update({ where: { id: loserId }, data: { losses: { increment: 1 } } });
+          if (winnerId && typeof winnerId === 'number') {
+            await prisma.user.update({ where: { id: winnerId }, data: { wins: { increment: 1 } } });
+          }
+          if (loserId && typeof loserId === 'number') {
+            await prisma.user.update({ where: { id: loserId }, data: { losses: { increment: 1 } } });
+          }
         }
         rooms.delete(roomId);
       }
