@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { io } from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import Navbar from '../components/Navbar';
+import { API_URL } from '../config';
 
 export default function Lobby() {
   const { user } = useAuth();
@@ -11,7 +12,7 @@ export default function Lobby() {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const s = io('http://localhost:3001');
+    const s = io(API_URL);
     setSocket(s);
 
     s.on('connect', () => {

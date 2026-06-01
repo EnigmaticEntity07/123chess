@@ -5,6 +5,7 @@ import Board from '../components/Board';
 import Navbar from '../components/Navbar';
 import { ChessEngine } from '../game/chess-engine';
 import { ProgressiveGame } from '../game/progressive';
+import { API_URL } from '../config';
 
 export default function Game() {
   const { roomId } = useParams();
@@ -23,7 +24,7 @@ export default function Game() {
   const [lastMove, setLastMove] = useState(null);
 
   useEffect(() => {
-    const s = io('http://localhost:3001');
+    const s = io(API_URL);
     setSocket(s);
 
     s.on('connect', () => {

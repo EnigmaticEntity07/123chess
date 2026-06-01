@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { API_URL } from '../config';
 
 const AuthContext = createContext();
 
@@ -10,7 +11,7 @@ export function AuthProvider({ children }) {
     const token = localStorage.getItem('token');
     if (token) {
       // Fetch user profile
-      fetch('http://localhost:3001/api/users/me', {
+      fetch(`${API_URL}/api/users/me`, {
         headers: { Authorization: `Bearer ${token}` }
       })
         .then(res => res.json())
