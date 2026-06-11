@@ -14,7 +14,7 @@ export default function Navbar() {
   return (
     <nav className="nav container">
       <Link to="/" className="nav-brand">
-        ♟ <span>Progressive Chess</span>
+        ♟ <span>123Chess</span>
       </Link>
       <div className="nav-links">
         {user ? (

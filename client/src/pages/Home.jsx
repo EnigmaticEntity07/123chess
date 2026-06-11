@@ -34,7 +34,7 @@ export default function Home() {
     <>
       <Navbar />
       <div className="container hero">
-        <h1>Next-Gen Progressive Chess</h1>
+        <h1>Next-Gen 123Chess</h1>
         <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
           Experience the intense Italian variant where each turn grows longer.<br/>
           White makes 1 move, Black makes 2, White makes 3... Can you survive the escalation?
