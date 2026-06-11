@@ -20,6 +20,7 @@ const DEFAULT_ORIGINS = [
   'http://localhost:5173',
   'http://localhost:3000',
   'https://progressive-chess.vercel.app',
+  'https://123chess.vercel.app',
 ];
 
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
