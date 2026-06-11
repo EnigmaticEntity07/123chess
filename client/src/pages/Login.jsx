@@ -7,6 +7,7 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -31,6 +32,7 @@ export default function Login() {
   };
 
   const handleGuestLogin = async () => {
+    setIsGuestLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/guest`, {
         method: 'POST',
@@ -45,6 +47,8 @@ export default function Login() {
       }
     } catch (err) {
       setError('Network error');
+    } finally {
+      setIsGuestLoading(false);
     }
   };
 
@@ -71,7 +75,7 @@ export default function Login() {
             required 
           />
           <button type="submit" className="btn-primary" style={{ width: '100%', marginBottom: '1rem' }}>Login</button>
-          <button type="button" onClick={handleGuestLogin} className="btn-secondary" style={{ width: '100%', background: '#333', color: 'white', border: '1px solid #555', padding: '12px', borderRadius: '4px', cursor: 'pointer' }}>Play as Guest</button>
+          <button type="button" onClick={handleGuestLogin} disabled={isGuestLoading} className="btn-secondary" style={{ width: '100%', background: '#333', color: 'white', border: '1px solid #555', padding: '12px', borderRadius: '4px', cursor: isGuestLoading ? 'not-allowed' : 'pointer', opacity: isGuestLoading ? 0.7 : 1 }}>{isGuestLoading ? 'Connecting...' : 'Play as Guest'}</button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '1rem' }}>
           Don't have an account? <Link to="/register" style={{ color: 'var(--brand)' }}>Sign up</Link>

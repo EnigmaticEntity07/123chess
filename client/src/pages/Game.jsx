@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import Board from '../components/Board';
 import Navbar from '../components/Navbar';
 import { ChessEngine } from '../game/chess-engine';
+import { useAuth } from '../context/AuthContext';
 import { ProgressiveGame } from '../game/progressive';
 import { API_URL } from '../config';
 
@@ -12,6 +13,7 @@ export default function Game() {
   const [searchParams] = useSearchParams();
   const myColor = searchParams.get('color'); // 'w' or 'b'
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [socket, setSocket] = useState(null);
   const [game, setGame] = useState(null);
@@ -28,9 +30,9 @@ export default function Game() {
     setSocket(s);
 
     s.on('connect', () => {
-      // already joined via lobby, but we can re-join if refreshed?
-      // better to let the lobby handle joining, but for hard refreshes we'd need re-auth.
-      // For now assume they joined properly.
+      if (user && user.id) {
+        s.emit('connect_to_game', { roomId, userId: user.id });
+      }
     });
 
     s.on('game_started', (data) => {

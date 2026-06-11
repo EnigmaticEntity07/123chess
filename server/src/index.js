@@ -181,6 +181,24 @@ io.on('connection', (socket) => {
     io.to('lobby').emit('lobby_rooms', Array.from(rooms.values()).filter(r => !r.players.w || !r.players.b).map(r => ({ id: r.id, hostName: r.hostName })));
   });
 
+  socket.on('connect_to_game', (data) => {
+    const { roomId, userId } = data;
+    const room = rooms.get(roomId);
+    if (!room) return;
+
+    socket.join(roomId);
+    if (room.players.w === userId) room.sockets.w = socket.id;
+    else if (room.players.b === userId) room.sockets.b = socket.id;
+
+    if (room.players.w && room.players.b) {
+      io.to(roomId).emit('game_started', {
+        players: room.players,
+        turnInfo: room.game.getTurnInfo(),
+        board: room.game.engine.toJSON()
+      });
+    }
+  });
+
   socket.on('make_move', async (data) => {
     const { roomId, from, to, promotion } = data;
     const room = rooms.get(roomId);
