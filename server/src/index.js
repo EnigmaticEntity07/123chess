@@ -14,13 +14,33 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+// -- CORS Configuration --
+// In production, set ALLOWED_ORIGINS to your Vercel frontend URL(s), comma-separated.
+// e.g. ALLOWED_ORIGINS=https://progressive-chess.vercel.app,https://your-custom-domain.com
+const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
+  : ['http://localhost:5173', 'http://localhost:3000'];
+
 const io = new Server(httpServer, {
-  cors: { origin: '*' }
+  cors: {
+    origin: ALLOWED_ORIGINS,
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
 });
 const prisma = new PrismaClient({});
 
-app.use(cors());
+app.use(cors({
+  origin: ALLOWED_ORIGINS,
+  credentials: true
+}));
 app.use(express.json());
+
+// -- Health Check --
+app.get('/', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
 
 const JWT_SECRET = process.env.JWT_SECRET || 'supersecretkey';
 
