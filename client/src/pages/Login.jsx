@@ -7,12 +7,15 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/login`, {
         method: 'POST',
@@ -24,14 +27,17 @@ export default function Login() {
         login(data.token, data.user);
         navigate('/lobby');
       } else {
-        setError(data.error);
+        setError(data.error || 'Login failed');
       }
     } catch (err) {
-      setError('Network error');
+      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGuestLogin = async () => {
+    setError('');
     setIsGuestLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/guest`, {
@@ -43,10 +49,10 @@ export default function Login() {
         login(data.token, data.user);
         navigate('/lobby');
       } else {
-        setError(data.error);
+        setError(data.error || 'Guest login failed');
       }
     } catch (err) {
-      setError('Network error');
+      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
     } finally {
       setIsGuestLoading(false);
     }
@@ -56,7 +62,7 @@ export default function Login() {
     <div className="auth-container">
       <div className="auth-box">
         <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Welcome Back</h2>
-        {error && <p style={{ color: 'var(--brand)', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
+        {error && <p className="auth-error">{error}</p>}
         <form onSubmit={handleSubmit}>
           <input 
             type="text" 
@@ -65,6 +71,7 @@ export default function Login() {
             value={username} 
             onChange={e => setUsername(e.target.value)} 
             required 
+            disabled={isLoading}
           />
           <input 
             type="password" 
@@ -73,9 +80,25 @@ export default function Login() {
             value={password} 
             onChange={e => setPassword(e.target.value)} 
             required 
+            disabled={isLoading}
           />
-          <button type="submit" className="btn-primary" style={{ width: '100%', marginBottom: '1rem' }}>Login</button>
-          <button type="button" onClick={handleGuestLogin} disabled={isGuestLoading} className="btn-secondary" style={{ width: '100%', background: '#333', color: 'white', border: '1px solid #555', padding: '12px', borderRadius: '4px', cursor: isGuestLoading ? 'not-allowed' : 'pointer', opacity: isGuestLoading ? 0.7 : 1 }}>{isGuestLoading ? 'Connecting...' : 'Play as Guest'}</button>
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            style={{ width: '100%', marginBottom: '1rem' }}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Signing in...' : 'Login'}
+          </button>
+          <button 
+            type="button" 
+            onClick={handleGuestLogin} 
+            disabled={isGuestLoading || isLoading} 
+            className="btn-secondary" 
+            style={{ width: '100%' }}
+          >
+            {isGuestLoading ? 'Connecting...' : 'Play as Guest'}
+          </button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '1rem' }}>
           Don't have an account? <Link to="/register" style={{ color: 'var(--brand)' }}>Sign up</Link>

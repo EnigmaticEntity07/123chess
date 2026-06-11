@@ -7,11 +7,15 @@ export default function Register() {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isGuestLoading, setIsGuestLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError('');
+    setIsLoading(true);
     try {
       const res = await fetch(`${API_URL}/api/auth/register`, {
         method: 'POST',
@@ -23,25 +27,34 @@ export default function Register() {
         login(data.token, data.user);
         navigate('/lobby');
       } else {
-        setError(data.error);
+        setError(data.error || 'Registration failed');
       }
     } catch (err) {
-      setError('Network error');
+      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const handleGuestLogin = async () => {
+    setError('');
+    setIsGuestLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/guest`, { method: 'POST' });
+      const res = await fetch(`${API_URL}/api/auth/guest`, { 
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
       const data = await res.json();
       if (res.ok) {
         login(data.token, data.user);
         navigate('/lobby');
       } else {
-        setError(data.error);
+        setError(data.error || 'Guest login failed');
       }
     } catch (err) {
-      setError('Network error');
+      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
+    } finally {
+      setIsGuestLoading(false);
     }
   };
 
@@ -49,26 +62,45 @@ export default function Register() {
     <div className="auth-container">
       <div className="auth-box">
         <h2 style={{ textAlign: 'center', marginBottom: '2rem' }}>Create Account</h2>
-        {error && <p style={{ color: 'var(--brand)', marginBottom: '1rem', textAlign: 'center' }}>{error}</p>}
+        {error && <p className="auth-error">{error}</p>}
         <form onSubmit={handleSubmit}>
           <input 
             type="text" 
-            placeholder="Username" 
+            placeholder="Username (min 3 chars)" 
             className="input-field" 
             value={username} 
             onChange={e => setUsername(e.target.value)} 
             required 
+            disabled={isLoading}
+            minLength={3}
           />
           <input 
             type="password" 
-            placeholder="Password" 
+            placeholder="Password (min 4 chars)" 
             className="input-field" 
             value={password} 
             onChange={e => setPassword(e.target.value)} 
             required 
+            disabled={isLoading}
+            minLength={4}
           />
-          <button type="submit" className="btn-primary" style={{ width: '100%', marginBottom: '1rem' }}>Sign Up</button>
-          <button type="button" onClick={handleGuestLogin} className="btn-secondary" style={{ width: '100%', background: '#333', color: 'white', border: '1px solid #555', padding: '12px', borderRadius: '4px', cursor: 'pointer' }}>Play as Guest</button>
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            style={{ width: '100%', marginBottom: '1rem' }}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Creating account...' : 'Sign Up'}
+          </button>
+          <button 
+            type="button" 
+            onClick={handleGuestLogin} 
+            disabled={isGuestLoading || isLoading}
+            className="btn-secondary" 
+            style={{ width: '100%' }}
+          >
+            {isGuestLoading ? 'Connecting...' : 'Play as Guest'}
+          </button>
         </form>
         <p style={{ textAlign: 'center', marginTop: '1rem' }}>
           Already have an account? <Link to="/login" style={{ color: 'var(--brand)' }}>Login</Link>
