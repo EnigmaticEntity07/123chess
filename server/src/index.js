@@ -18,9 +18,18 @@ const httpServer = createServer(app);
 // -- CORS Configuration --
 // In production, set ALLOWED_ORIGINS to your Vercel frontend URL(s), comma-separated.
 // e.g. ALLOWED_ORIGINS=https://progressive-chess.vercel.app,https://your-custom-domain.com
+const DEFAULT_ORIGINS = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://progressive-chess.vercel.app',
+];
+
 const ALLOWED_ORIGINS = process.env.ALLOWED_ORIGINS
-  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-  : ['http://localhost:5173', 'http://localhost:3000'];
+  ? [...new Set([
+      ...process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()),
+      ...DEFAULT_ORIGINS,
+    ])]
+  : DEFAULT_ORIGINS;
 
 const io = new Server(httpServer, {
   cors: {

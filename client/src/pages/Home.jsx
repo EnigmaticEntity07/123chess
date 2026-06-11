@@ -10,14 +10,20 @@ export default function Home() {
 
   const handleGuestLogin = async () => {
     try {
-      const res = await fetch(`${API_URL}/api/auth/guest`, { method: 'POST' });
+      const res = await fetch(`${API_URL}/api/auth/guest`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
       const data = await res.json();
       if (res.ok) {
         login(data.token, data.user);
         navigate('/lobby');
+      } else {
+        alert(data.error || 'Guest login failed. Please try again.');
       }
     } catch (err) {
       console.error('Guest login failed', err);
+      alert('Network error — unable to reach the game server. Please try again later.');
     }
   };
   return (
