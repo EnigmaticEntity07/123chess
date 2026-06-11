@@ -159,7 +159,7 @@ export default function Lobby() {
             {rooms.map(room => (
               <div key={room.id} className="room-card">
                 <div>
-                  <h3 style={{ color: 'white', marginBottom: '5px' }}>Match {room.id}</h3>
+                  <h3 style={{ color: 'var(--text-primary)', marginBottom: '5px' }}>Match {room.id}</h3>
                   <p>Host: {room.hostName}</p>
                   {room.timeControl && (
                     <p style={{ color: 'var(--brand)', fontSize: '0.9rem', marginTop: '4px' }}>

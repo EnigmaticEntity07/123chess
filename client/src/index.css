@@ -1,19 +1,19 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap');
 
 :root {
-  --bg-primary: #0a0a0a;
-  --bg-secondary: #1a1a1a;
-  --bg-accent: #262626;
-  --text-primary: #ffffff;
-  --text-secondary: #a3a3a3;
-  --brand: #ff3366;
-  --brand-hover: #ff0040;
+  --bg-primary: #f0f4f8;
+  --bg-secondary: #ffffff;
+  --bg-accent: #dbeafe;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --brand: #3b82f6;
+  --brand-hover: #2563eb;
   
-  --board-light: #e8dab3;
-  --board-dark: #b58863;
-  --board-highlight: rgba(255, 51, 102, 0.5);
-  --board-last-move-light: #f5f682;
-  --board-last-move-dark: #baca44;
+  --board-light: #dee3e6;
+  --board-dark: #70a2a3;
+  --board-highlight: rgba(59, 130, 246, 0.5);
+  --board-last-move-light: rgba(245, 246, 130, 0.6);
+  --board-last-move-dark: rgba(186, 202, 68, 0.6);
 
   --font-main: 'Outfit', sans-serif;
   
@@ -21,7 +21,7 @@
   --radius-md: 12px;
   --radius-lg: 20px;
   
-  --shadow-glow: 0 0 20px rgba(255, 51, 102, 0.4);
+  --shadow-glow: 0 4px 15px rgba(59, 130, 246, 0.3);
 }
 
 * {
@@ -72,7 +72,7 @@ p { color: var(--text-secondary); line-height: 1.6; }
 }
 .btn-secondary {
   background: var(--bg-accent);
-  color: white;
+  color: var(--text-primary);
   border: none;
   padding: 12px 24px;
   font-size: 1rem;
@@ -86,7 +86,7 @@ p { color: var(--text-secondary); line-height: 1.6; }
   text-align: center;
 }
 .btn-secondary:hover:not(:disabled) {
-  background: #333;
+  background: #cbd5e1;
 }
 .btn-secondary:disabled {
   opacity: 0.5;
@@ -158,7 +158,7 @@ p { color: var(--text-secondary); line-height: 1.6; }
 .nav-brand {
   font-size: 1.5rem;
   font-weight: 800;
-  color: white;
+  color: var(--text-primary);
   text-decoration: none;
   display: flex;
   align-items: center;
@@ -173,7 +173,7 @@ p { color: var(--text-secondary); line-height: 1.6; }
   padding: 6rem 0;
 }
 .hero h1 {
-  background: linear-gradient(135deg, #fff, #a3a3a3);
+  background: linear-gradient(135deg, #1e293b, #475569);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   margin-bottom: 1rem;
@@ -372,9 +372,8 @@ p { color: var(--text-secondary); line-height: 1.6; }
 
 /* ── Piece Styling ── */
 .piece-svg {
-  width: 80%;
-  height: 80%;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+  width: 90%;
+  height: 90%;
   z-index: 1;
   pointer-events: none;
 }
@@ -428,7 +427,7 @@ p { color: var(--text-secondary); line-height: 1.6; }
   color: var(--text-secondary);
 }
 .clock-active .clock-name {
-  color: white;
+  color: var(--text-primary);
 }
 .clock-time {
   font-size: 1.5rem;

@@ -263,6 +263,19 @@ export default function Game() {
             <div className="waiting-spinner"></div>
             <h2>Waiting for opponent to join...</h2>
             <p style={{ marginTop: '1rem' }}>Share the game link with a friend or wait for someone from the lobby.</p>
+            <div style={{ marginTop: '1rem', display: 'flex', gap: '0.5rem', justifyContent: 'center' }}>
+              <input type="text" readOnly value={window.location.href} className="input-field" style={{ marginBottom: 0, width: '300px' }} />
+              <button 
+                className="btn-secondary" 
+                onClick={(e) => {
+                  navigator.clipboard.writeText(window.location.href);
+                  e.target.innerText = 'Copied!';
+                  setTimeout(() => e.target.innerText = 'Copy Link', 2000);
+                }}
+              >
+                Copy Link
+              </button>
+            </div>
           </div>
         </div>
       </>
