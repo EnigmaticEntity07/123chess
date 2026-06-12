@@ -27,6 +27,30 @@ export default function LocalGame() {
     setTurnInfo(progGame.getTurnInfo());
   }, []);
 
+  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
+    const promoType = promotion || (move?.promotion ? move.promotion : null);
+
+    const record = game.makeMove({ row: fromRow, col: fromCol }, { row: toRow, col: toCol }, promoType);
+    if (record) {
+      setBoardData(game.engine.toJSON());
+      const newTurnInfo = game.getTurnInfo();
+      setTurnInfo(newTurnInfo);
+      setLastMove({ from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } });
+      setSelectedSquare(null);
+      setValidMoves([]);
+
+      if (newTurnInfo.gameOver) {
+        playGameEndSound();
+      } else if (record.isCheckmate || record.givesCheck) {
+        playCheckSound();
+      } else if (record.captured || record.enPassant) {
+        playCaptureSound();
+      } else {
+        playMoveSound();
+      }
+    }
+  }, [game]);
+
   const handleSquareClick = useCallback((r, c) => {
     if (!game || turnInfo?.gameOver) return;
 
@@ -68,30 +92,6 @@ export default function LocalGame() {
     if (!game || turnInfo?.gameOver) return;
     executeMove(fromRow, fromCol, toRow, toCol, null, pieceType);
   }, [game, turnInfo, executeMove]);
-
-  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
-    const promoType = promotion || (move?.promotion ? move.promotion : null);
-
-    const record = game.makeMove({ row: fromRow, col: fromCol }, { row: toRow, col: toCol }, promoType);
-    if (record) {
-      setBoardData(game.engine.toJSON());
-      const newTurnInfo = game.getTurnInfo();
-      setTurnInfo(newTurnInfo);
-      setLastMove({ from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } });
-      setSelectedSquare(null);
-      setValidMoves([]);
-
-      if (newTurnInfo.gameOver) {
-        playGameEndSound();
-      } else if (record.isCheckmate || record.givesCheck) {
-        playCheckSound();
-      } else if (record.captured || record.enPassant) {
-        playCaptureSound();
-      } else {
-        playMoveSound();
-      }
-    }
-  }, [game]);
 
   const handleResign = () => {
     if (turnInfo?.gameOver) return;

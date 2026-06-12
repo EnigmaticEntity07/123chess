@@ -135,6 +135,57 @@ export default function Game() {
     return () => s.disconnect();
   }, [roomId]);
 
+  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
+    const promoType = promotion || (move.promotion ? move.promotion : null);
+
+    // Optimistic UI: apply move locally first
+    prevBoardRef.current = boardData;
+    
+    // Create optimistic board state
+    const optimisticBoard = JSON.parse(JSON.stringify(boardData));
+    const piece = optimisticBoard.board[fromRow][fromCol];
+    optimisticBoard.board[toRow][toCol] = piece;
+    optimisticBoard.board[fromRow][fromCol] = null;
+    if (promoType && piece) {
+      piece.type = promoType;
+    }
+    // Handle en passant removal
+    if (move.enPassant) {
+      optimisticBoard.board[fromRow][toCol] = null;
+    }
+    // Handle castling rook
+    if (move.castling) {
+      const br = toRow;
+      if (move.castling === 'K') {
+        optimisticBoard.board[br][5] = optimisticBoard.board[br][7];
+        optimisticBoard.board[br][7] = null;
+      } else {
+        optimisticBoard.board[br][3] = optimisticBoard.board[br][0];
+        optimisticBoard.board[br][0] = null;
+      }
+    }
+
+    setBoardData(optimisticBoard);
+    setLastMove({ from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } });
+    setSelectedSquare(null);
+    setValidMoves([]);
+
+    // Play sound immediately (optimistic)
+    if (move.captured || move.enPassant) {
+      playCaptureSound();
+    } else {
+      playMoveSound();
+    }
+
+    // Send to server
+    socket.emit('make_move', {
+      roomId,
+      from: { row: fromRow, col: fromCol },
+      to: { row: toRow, col: toCol },
+      promotion: promoType
+    });
+  }, [boardData, socket, roomId]);
+
   const handleSquareClick = useCallback((r, c) => {
     if (!game || !socket) return;
     if (gameOverInfo || turnInfo?.gameOver) return;
@@ -187,57 +238,6 @@ export default function Game() {
       executeMove(fromRow, fromCol, toRow, toCol, move, pieceType);
     }
   }, [game, socket, turnInfo, myColor, gameOverInfo, executeMove]);
-
-  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
-    const promoType = promotion || (move.promotion ? move.promotion : null);
-
-    // Optimistic UI: apply move locally first
-    prevBoardRef.current = boardData;
-    
-    // Create optimistic board state
-    const optimisticBoard = JSON.parse(JSON.stringify(boardData));
-    const piece = optimisticBoard.board[fromRow][fromCol];
-    optimisticBoard.board[toRow][toCol] = piece;
-    optimisticBoard.board[fromRow][fromCol] = null;
-    if (promoType && piece) {
-      piece.type = promoType;
-    }
-    // Handle en passant removal
-    if (move.enPassant) {
-      optimisticBoard.board[fromRow][toCol] = null;
-    }
-    // Handle castling rook
-    if (move.castling) {
-      const br = toRow;
-      if (move.castling === 'K') {
-        optimisticBoard.board[br][5] = optimisticBoard.board[br][7];
-        optimisticBoard.board[br][7] = null;
-      } else {
-        optimisticBoard.board[br][3] = optimisticBoard.board[br][0];
-        optimisticBoard.board[br][0] = null;
-      }
-    }
-
-    setBoardData(optimisticBoard);
-    setLastMove({ from: { row: fromRow, col: fromCol }, to: { row: toRow, col: toCol } });
-    setSelectedSquare(null);
-    setValidMoves([]);
-
-    // Play sound immediately (optimistic)
-    if (move.captured || move.enPassant) {
-      playCaptureSound();
-    } else {
-      playMoveSound();
-    }
-
-    // Send to server
-    socket.emit('make_move', {
-      roomId,
-      from: { row: fromRow, col: fromCol },
-      to: { row: toRow, col: toCol },
-      promotion: promoType
-    });
-  }, [boardData, socket, roomId]);
 
   const handleResign = () => {
     if (!socket || gameOverInfo) return;
