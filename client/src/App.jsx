@@ -7,6 +7,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Lobby from './pages/Lobby';
 import Game from './pages/Game';
+import LocalGame from './pages/LocalGame';
 
 import './index.css';
 
@@ -24,6 +25,7 @@ function App() {
           <Route path="/" element={<Home />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/local-game" element={<LocalGame />} />
           <Route path="/lobby" element={
             <ProtectedRoute>
               <Lobby />

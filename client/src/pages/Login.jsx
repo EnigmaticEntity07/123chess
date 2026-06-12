@@ -37,25 +37,7 @@ export default function Login() {
   };
 
   const handleGuestLogin = async () => {
-    setError('');
-    setIsGuestLoading(true);
-    try {
-      const res = await fetch(`${API_URL}/api/auth/guest`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      if (res.ok) {
-        login(data.token, data.user);
-        navigate('/lobby');
-      } else {
-        setError(data.error || 'Guest login failed');
-      }
-    } catch (err) {
-      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
-    } finally {
-      setIsGuestLoading(false);
-    }
+    navigate('/local-game');
   };
 
   return (
