@@ -9,7 +9,9 @@ const TIME_PRESETS = [
   { label: 'Bullet 1+0',    baseMinutes: 1,  incrementSeconds: 0 },
   { label: 'Bullet 2+1',    baseMinutes: 2,  incrementSeconds: 1 },
   { label: 'Blitz 3+0',     baseMinutes: 3,  incrementSeconds: 0 },
+  { label: 'Blitz 3+2',     baseMinutes: 3,  incrementSeconds: 2 },
   { label: 'Blitz 5+0',     baseMinutes: 5,  incrementSeconds: 0 },
+  { label: 'Blitz 5+3',     baseMinutes: 5,  incrementSeconds: 3 },
   { label: 'Rapid 10+0',    baseMinutes: 10, incrementSeconds: 0 },
   { label: 'Rapid 15+10',   baseMinutes: 15, incrementSeconds: 10 },
   { label: 'Classical 30+0', baseMinutes: 30, incrementSeconds: 0 },
@@ -21,7 +23,7 @@ export default function Lobby() {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
   const [socket, setSocket] = useState(null);
-  const [selectedPreset, setSelectedPreset] = useState(3); // default: Blitz 5+0
+  const [selectedPreset, setSelectedPreset] = useState(4); // default: Blitz 5+0
   const [isCustom, setIsCustom] = useState(false);
   const [customMinutes, setCustomMinutes] = useState(10);
   const [customIncrement, setCustomIncrement] = useState(0);

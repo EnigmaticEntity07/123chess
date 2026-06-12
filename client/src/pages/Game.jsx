@@ -160,7 +160,7 @@ export default function Game() {
       setSelectedSquare(null);
       setValidMoves([]);
     }
-  }, [game, socket, selectedSquare, validMoves, boardData, myColor, turnInfo, gameOverInfo]);
+  }, [game, socket, selectedSquare, validMoves, boardData, myColor, turnInfo, gameOverInfo, executeMove]);
 
   const handleDragMove = useCallback((fromRow, fromCol, toRow, toCol) => {
     if (!game || !socket) return;
@@ -174,7 +174,7 @@ export default function Game() {
       if (move.promotion) return;
       executeMove(fromRow, fromCol, toRow, toCol, move);
     }
-  }, [game, socket, turnInfo, myColor, gameOverInfo]);
+  }, [game, socket, turnInfo, myColor, gameOverInfo, executeMove]);
 
   const handlePromotion = useCallback((fromRow, fromCol, toRow, toCol, pieceType) => {
     if (!game || !socket) return;
@@ -186,7 +186,7 @@ export default function Game() {
     if (move) {
       executeMove(fromRow, fromCol, toRow, toCol, move, pieceType);
     }
-  }, [game, socket, turnInfo, myColor, gameOverInfo]);
+  }, [game, socket, turnInfo, myColor, gameOverInfo, executeMove]);
 
   const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
     const promoType = promotion || (move.promotion ? move.promotion : null);

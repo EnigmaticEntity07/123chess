@@ -51,7 +51,7 @@ export default function LocalGame() {
       setSelectedSquare(null);
       setValidMoves([]);
     }
-  }, [game, selectedSquare, validMoves, boardData, turnInfo]);
+  }, [game, selectedSquare, validMoves, boardData, turnInfo, executeMove]);
 
   const handleDragMove = useCallback((fromRow, fromCol, toRow, toCol) => {
     if (!game || turnInfo?.gameOver) return;
@@ -62,12 +62,12 @@ export default function LocalGame() {
       if (move.promotion) return;
       executeMove(fromRow, fromCol, toRow, toCol, move);
     }
-  }, [game, turnInfo]);
+  }, [game, turnInfo, executeMove]);
 
   const handlePromotion = useCallback((fromRow, fromCol, toRow, toCol, pieceType) => {
     if (!game || turnInfo?.gameOver) return;
     executeMove(fromRow, fromCol, toRow, toCol, null, pieceType);
-  }, [game, turnInfo]);
+  }, [game, turnInfo, executeMove]);
 
   const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
     const promoType = promotion || (move?.promotion ? move.promotion : null);
