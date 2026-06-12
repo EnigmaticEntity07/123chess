@@ -9,8 +9,11 @@ export default function Home() {
   const { login } = useAuth();
   const [isGuestLoading, setIsGuestLoading] = useState(false);
 
+  const [error, setError] = useState('');
+
   const handleGuestLogin = async () => {
     setIsGuestLoading(true);
+    setError('');
     try {
       const res = await fetch(`${API_URL}/api/auth/guest`, { method: 'POST' });
       const data = await res.json();
@@ -20,10 +23,12 @@ export default function Home() {
         const redirect = params.get('redirect') || '/lobby';
         navigate(redirect);
       } else {
+        setError('Guest login failed. Please try again.');
         console.error('Guest login failed');
       }
     } catch (err) {
-      console.error('Cannot reach the server.');
+      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
+      console.error('Cannot reach the server.', err);
     } finally {
       setIsGuestLoading(false);
     }
@@ -37,6 +42,7 @@ export default function Home() {
           Experience the intense Italian variant where each turn grows longer.<br/>
           White makes 1 move, Black makes 2, White makes 3... Can you survive the escalation?
         </p>
+        {error && <p className="auth-error" style={{ marginBottom: '1rem', color: 'red' }}>{error}</p>}
         <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
           <Link to="/register" className="btn-primary" style={{ fontSize: '1.2rem', padding: '16px 32px' }}>
             Start Playing Free
