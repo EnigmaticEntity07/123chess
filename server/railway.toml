@@ -3,6 +3,7 @@ builder = "NIXPACKS"
 buildCommand = "npm install && npm run build"
 
 [deploy]
+preDeployCommand = "npx prisma db push"
 startCommand = "npm start"
 healthcheckPath = "/"
 healthcheckTimeout = 30
