@@ -25,7 +25,9 @@ export default function Register() {
       const data = await res.json();
       if (res.ok) {
         login(data.token, data.user);
-        navigate('/lobby');
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect') || '/lobby';
+        navigate(redirect);
       } else {
         setError(data.error || 'Registration failed');
       }
@@ -37,7 +39,23 @@ export default function Register() {
   };
 
   const handleGuestLogin = async () => {
-    navigate('/local-game');
+    setIsGuestLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/guest`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        login(data.token, data.user);
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect') || '/lobby';
+        navigate(redirect);
+      } else {
+        setError('Guest login failed');
+      }
+    } catch (err) {
+      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
+    } finally {
+      setIsGuestLoading(false);
+    }
   };
 
   return (

@@ -46,7 +46,7 @@ export default function Game() {
 
     s.on('connect', () => {
       if (user && user.id) {
-        s.emit('connect_to_game', { roomId, userId: user.id });
+        s.emit('connect_to_game', { roomId, userId: user.id, username: user.username });
       }
     });
 
@@ -125,6 +125,10 @@ export default function Game() {
 
     s.on('error', (msg) => {
       console.error('Socket error:', msg);
+    });
+
+    s.on('room_joined', ({ roomId, color }) => {
+      navigate(`/game/${roomId}?color=${color}`, { replace: true });
     });
 
     return () => s.disconnect();

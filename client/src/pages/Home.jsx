@@ -10,7 +10,23 @@ export default function Home() {
   const [isGuestLoading, setIsGuestLoading] = useState(false);
 
   const handleGuestLogin = async () => {
-    navigate('/local-game');
+    setIsGuestLoading(true);
+    try {
+      const res = await fetch(`${API_URL}/api/auth/guest`, { method: 'POST' });
+      const data = await res.json();
+      if (res.ok) {
+        login(data.token, data.user);
+        const params = new URLSearchParams(window.location.search);
+        const redirect = params.get('redirect') || '/lobby';
+        navigate(redirect);
+      } else {
+        console.error('Guest login failed');
+      }
+    } catch (err) {
+      console.error('Cannot reach the server.');
+    } finally {
+      setIsGuestLoading(false);
+    }
   };
   return (
     <>

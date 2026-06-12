@@ -350,13 +350,33 @@ io.on('connection', (socket) => {
 
   // ── RECONNECT TO GAME ──
   socket.on('connect_to_game', (data) => {
-    const { roomId, userId } = data;
+    const { roomId, userId, username } = data;
     const room = rooms.get(roomId);
-    if (!room) return;
+    if (!room) {
+      socket.emit('error', 'Room not found');
+      return;
+    }
 
     socket.join(roomId);
-    if (room.players.w === userId) room.sockets.w = socket.id;
-    else if (room.players.b === userId) room.sockets.b = socket.id;
+
+    if (room.players.w === userId) {
+      room.sockets.w = socket.id;
+    } else if (room.players.b === userId) {
+      room.sockets.b = socket.id;
+    } else {
+      // Try to join if there is an empty spot
+      if (!room.players.w || !room.players.b) {
+        const color = room.players.w ? 'b' : 'w';
+        room.players[color] = userId;
+        room.playerNames[color] = username || 'Guest';
+        room.sockets[color] = socket.id;
+        socket.emit('room_joined', { roomId, color });
+        io.to('lobby').emit('lobby_rooms', getLobbyRooms());
+      } else {
+        socket.emit('error', 'Room full');
+        return;
+      }
+    }
 
     if (room.players.w && room.players.b) {
       const payload = {
@@ -368,6 +388,11 @@ io.on('connection', (socket) => {
         clocks: { ...room.clocks }
       };
       io.to(roomId).emit('game_started', payload);
+
+      // Start clock if timed and not already running and game not over
+      if (room.timeControl && !room.clockInterval && !room.game.gameOver) {
+        startRoomClock(room);
+      }
     }
   });
 
