@@ -4,9 +4,9 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "npx prisma generate",
+    "build": "npx prisma generate && npx prisma db push",
     "dev": "nodemon src/index.js",
-    "start": "prisma generate && (prisma db push || echo 'Database push failed, continuing...') && node src/index.js",
+    "start": "node src/index.js",
     "postinstall": "npx prisma generate"
   },
   "keywords": [],
