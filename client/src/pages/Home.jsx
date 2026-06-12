@@ -1,14 +1,14 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import GhostGame from '../components/GhostGame';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 
 export default function Home() {
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const [isGuestLoading, setIsGuestLoading] = useState(false);
-
   const [error, setError] = useState('');
 
   const handleGuestLogin = async () => {
@@ -33,24 +33,98 @@ export default function Home() {
       setIsGuestLoading(false);
     }
   };
+
   return (
     <>
+      <div className="ambient-bg">
+        <div className="orb orb-1"></div>
+        <div className="orb orb-2"></div>
+      </div>
+      
       <Navbar />
-      <div className="container hero">
-        <h1>Next-Gen 123Chess</h1>
-        <p style={{ fontSize: '1.2rem', marginBottom: '2rem' }}>
-          Experience the intense Italian variant where each turn grows longer.<br/>
-          White makes 1 move, Black makes 2, White makes 3... Can you survive the escalation?
-        </p>
-        {error && <p className="auth-error" style={{ marginBottom: '1rem', color: 'red' }}>{error}</p>}
-        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-          <Link to="/register" className="btn-primary" style={{ fontSize: '1.2rem', padding: '16px 32px' }}>
-            Start Playing Free
-          </Link>
-          <button onClick={handleGuestLogin} disabled={isGuestLoading} className="btn-secondary" style={{ fontSize: '1.2rem', padding: '16px 32px', background: '#333', color: 'white', border: '1px solid #555', borderRadius: '4px', cursor: isGuestLoading ? 'not-allowed' : 'pointer', opacity: isGuestLoading ? 0.7 : 1 }}>
-            {isGuestLoading ? 'Connecting...' : 'Play as Guest'}
-          </button>
+
+      <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+        <div className="hero-split">
+          
+          {/* Left Column: Typography & Actions */}
+          <div className="hero-content">
+            <div className="server-status fade-slide-up delay-1">
+              <div className="status-dot"></div>
+              <span>Server Online</span>
+            </div>
+
+            <h1 className="fade-slide-up delay-2">
+              Play Chess Like Never Before
+            </h1>
+            
+            <p className="fade-slide-up delay-3">
+              Experience the intense chess variant where each turn grows longer.<br/>
+              White makes 1 move, Black makes 2, White makes 3... Can you survive the escalation?
+            </p>
+            
+            {error && (
+              <p className="auth-error fade-slide-up delay-3" style={{ marginBottom: '1rem', color: '#ef4444' }}>
+                {error}
+              </p>
+            )}
+
+            <div className="hero-buttons fade-slide-up delay-4">
+              {!user ? (
+                <>
+                  <Link to="/register" className="btn-primary" style={{ fontSize: '1.1rem', padding: '14px 28px' }}>
+                    Start Playing Free
+                  </Link>
+                  <button 
+                    onClick={handleGuestLogin} 
+                    disabled={isGuestLoading} 
+                    className="btn-secondary" 
+                    style={{ fontSize: '1.1rem', padding: '14px 28px', background: 'rgba(255,255,255,0.05)' }}
+                  >
+                    {isGuestLoading ? 'Connecting...' : 'Play as Guest'}
+                  </button>
+                </>
+              ) : (
+                <Link to="/lobby" className="btn-primary" style={{ fontSize: '1.1rem', padding: '14px 28px' }}>
+                  Enter Lobby
+                </Link>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column: Ghost Game */}
+          <div className="hero-visual fade-slide-up delay-5">
+            <GhostGame />
+          </div>
+
         </div>
+
+        {/* Game Modes Grid */}
+        <div className="modes-grid">
+          <Link to={user ? "/lobby" : "/register"} className="mode-card fade-slide-up delay-2">
+            <div className="mode-icon">⚔️</div>
+            <h3>Play Online</h3>
+            <p>Challenge players from around the world in real-time matchmaking.</p>
+          </Link>
+          
+          <Link to="/local" className="mode-card fade-slide-up delay-3">
+            <div className="mode-icon">👥</div>
+            <h3>Local Hotseat</h3>
+            <p>Play with a friend on the same device. Perfect for in-person battles.</p>
+          </Link>
+
+          <div className="mode-card fade-slide-up delay-4" style={{ cursor: 'not-allowed', opacity: 0.8 }}>
+            <div className="mode-icon" style={{ filter: 'grayscale(1)' }}>🤖</div>
+            <h3>Play Computer</h3>
+            <p>Coming soon. Test your skills against our advanced progressive engine.</p>
+          </div>
+
+          <div className="mode-card fade-slide-up delay-5" style={{ cursor: 'not-allowed', opacity: 0.8 }}>
+            <div className="mode-icon" style={{ filter: 'grayscale(1)' }}>🧩</div>
+            <h3>Daily Puzzles</h3>
+            <p>Coming soon. Solve complex progressive mates and combinations.</p>
+          </div>
+        </div>
+
       </div>
     </>
   );
