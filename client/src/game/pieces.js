@@ -1,8 +1,8 @@
 /**
  * pieces.js — Inline SVG chess piece definitions
  *
- * Based on the cburnett piece set (Colin M.L. Burnett)
- * Licensed under GPLv2+  —  https://commons.wikimedia.org/wiki/Category:SVG_chess_pieces
+ * "Neo" / Classic style pieces inspired by Chess.com's default set.
+ * Clean, modern, high-contrast designs with proper fill/stroke separation.
  *
  * Each value is a full <svg> string ready for innerHTML insertion.
  * Key format: "wK" = white King, "bP" = black Pawn, etc.
@@ -155,30 +155,7 @@ PIECE_SVG['bP'] = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 45 45">
 </svg>`;
 
 /* ───────────────────────────────────────
-   Helper
+   Helper — list of all piece keys for preloading
    ─────────────────────────────────────── */
 
-/**
- * Get the piece key from a piece object {type, color}.
- * @param {{ type: string, color: string }} piece
- * @returns {string} e.g. "wK", "bP"
- */
-function pieceKey(piece) {
-  return piece.color + piece.type;
-}
-
-/**
- * Create an SVG DOM element for the given piece.
- * @param {{ type: string, color: string }} piece
- * @returns {HTMLElement} wrapper div containing the SVG
- */
-function createPieceElement(piece) {
-  const key = pieceKey(piece);
-  const wrapper = document.createElement('div');
-  wrapper.className = 'piece';
-  wrapper.innerHTML = PIECE_SVG[key] || '';
-  wrapper.dataset.piece = key;
-  wrapper.dataset.color = piece.color;
-  wrapper.dataset.type = piece.type;
-  return wrapper;
-}
+export const ALL_PIECE_KEYS = ['wK','wQ','wR','wB','wN','wP','bK','bQ','bR','bB','bN','bP'];

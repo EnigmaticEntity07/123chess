@@ -1,18 +1,21 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
-import { PIECE_SVG } from '../game/pieces';
+import { PIECE_SVG, ALL_PIECE_KEYS } from '../game/pieces';
+import PromotionModal from './PromotionModal';
 
-export default function Board({ board, color, onSquareClick, onDragMove, selectedSquare, validMoves, lastMove, inCheck }) {
+export default function Board({ board, color, onSquareClick, onDragMove, selectedSquare, validMoves, lastMove, inCheck, onPromotion }) {
   const isFlipped = color === 'b';
   const boardRef = useRef(null);
   
   // Drag state
   const [dragging, setDragging] = useState(null); // { row, col, piece }
   const [dragPos, setDragPos] = useState(null);   // { x, y } in viewport coords
-  const [dragValidMoves, setDragValidMoves] = useState([]);
 
   // Animation state: tracks pieces that just moved for slide animation
   const [animatingPiece, setAnimatingPiece] = useState(null);
   const prevBoardRef = useRef(null);
+
+  // Promotion state
+  const [pendingPromotion, setPendingPromotion] = useState(null); // { fromRow, fromCol, toRow, toCol, color }
 
   // Detect piece movement for animation
   useEffect(() => {
@@ -49,6 +52,23 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
     };
   }
 
+  /**
+   * Get the pixel position for the promotion modal anchor.
+   */
+  function getPromotionPosition(row, col) {
+    if (!boardRef.current) return { x: 0, y: 0 };
+    const rect = boardRef.current.getBoundingClientRect();
+    const squareSize = rect.width / 8;
+
+    const displayRow = isFlipped ? 7 - row : row;
+    const displayCol = isFlipped ? 7 - col : col;
+
+    return {
+      x: rect.left + displayCol * squareSize + (squareSize / 2) - 37,
+      y: rect.top + displayRow * squareSize,
+    };
+  }
+
   // Convert viewport coords to board row/col
   const viewportToSquare = useCallback((clientX, clientY) => {
     if (!boardRef.current) return null;
@@ -66,8 +86,56 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
     return { row, col };
   }, [isFlipped]);
 
+  // Check if a move is a promotion
+  const isPromotionMove = useCallback((fromRow, fromCol, toRow) => {
+    const piece = board && board[fromRow] ? board[fromRow][fromCol] : null;
+    if (!piece || piece.type !== 'P') return false;
+    const promoRow = piece.color === 'w' ? 0 : 7;
+    return toRow === promoRow;
+  }, [board]);
+
+  /**
+   * Handle the completion of a move — checks for promotion first.
+   */
+  const completeMove = useCallback((fromRow, fromCol, toRow, toCol, viaDrag = false) => {
+    if (isPromotionMove(fromRow, fromCol, toRow)) {
+      const piece = board[fromRow][fromCol];
+      if (onPromotion) {
+        // Use the parent's promotion handler (async flow)
+        setPendingPromotion({ fromRow, fromCol, toRow, toCol, color: piece.color });
+      } else {
+        // Fallback: auto-promote to Queen
+        if (viaDrag && onDragMove) {
+          onDragMove(fromRow, fromCol, toRow, toCol);
+        } else {
+          onSquareClick(toRow, toCol);
+        }
+      }
+    } else {
+      if (viaDrag && onDragMove) {
+        onDragMove(fromRow, fromCol, toRow, toCol);
+      } else {
+        onSquareClick(toRow, toCol);
+      }
+    }
+  }, [board, isPromotionMove, onPromotion, onDragMove, onSquareClick]);
+
+  const handlePromotionSelect = useCallback((pieceType) => {
+    if (!pendingPromotion) return;
+    const { fromRow, fromCol, toRow, toCol } = pendingPromotion;
+    setPendingPromotion(null);
+    if (onPromotion) {
+      onPromotion(fromRow, fromCol, toRow, toCol, pieceType);
+    }
+  }, [pendingPromotion, onPromotion]);
+
+  const handlePromotionCancel = useCallback(() => {
+    setPendingPromotion(null);
+  }, []);
+
   // Mouse/touch handlers for drag
   const handlePointerDown = useCallback((e, r, c) => {
+    if (pendingPromotion) return; // Don't allow drag while promotion modal is open
     const piece = board && board[r] ? board[r][c] : null;
     if (!piece || piece.color !== color) return;
 
@@ -79,7 +147,7 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
 
     // Also select the piece (for valid move display)
     onSquareClick(r, c);
-  }, [board, color, onSquareClick]);
+  }, [board, color, onSquareClick, pendingPromotion]);
 
   useEffect(() => {
     if (!dragging) return;
@@ -100,12 +168,7 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
         // Check if it's a valid move
         const isValid = validMoves.find(m => m.to.row === target.row && m.to.col === target.col);
         if (isValid && (target.row !== dragging.row || target.col !== dragging.col)) {
-          // Make the move via drag
-          if (onDragMove) {
-            onDragMove(dragging.row, dragging.col, target.row, target.col);
-          } else {
-            onSquareClick(target.row, target.col);
-          }
+          completeMove(dragging.row, dragging.col, target.row, target.col, true);
         }
       }
 
@@ -124,7 +187,22 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
       window.removeEventListener('touchmove', handleMove);
       window.removeEventListener('touchend', handleUp);
     };
-  }, [dragging, validMoves, viewportToSquare, onSquareClick, onDragMove]);
+  }, [dragging, validMoves, viewportToSquare, completeMove]);
+
+  const handleSquareClick = useCallback((r, c) => {
+    if (pendingPromotion) return;
+    if (!dragging) {
+      // If there's already a selected square and this is a valid destination
+      if (selectedSquare) {
+        const isValid = validMoves.find(m => m.to.row === r && m.to.col === c);
+        if (isValid) {
+          completeMove(selectedSquare.row, selectedSquare.col, r, c, false);
+          return;
+        }
+      }
+      onSquareClick(r, c);
+    }
+  }, [dragging, pendingPromotion, selectedSquare, validMoves, completeMove, onSquareClick]);
 
   const renderSquare = (r, c) => {
     const isLight = (r + c) % 2 === 0;
@@ -141,7 +219,7 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
     const isKingInCheck = inCheck && piece && piece.type === 'K' && piece.color === inCheck;
 
     let className = `board-square ${isLight ? 'square-light' : 'square-dark'}`;
-    if (isSelected) className += ' square-selected';
+    if (isSelected) className += ` square-selected ${isLight ? 'square-light' : 'square-dark'}`;
     if (isValidMove) {
       className += piece ? ' square-valid-capture' : ' square-valid-move';
     }
@@ -154,7 +232,7 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
       pieceStyle = {
         transform: `translate(${animatingPiece.offsetX}px, ${animatingPiece.offsetY}px)`,
         transition: 'none',
-        animation: 'piece-slide 0.15s ease forwards',
+        animation: 'piece-slide 0.15s ease-in-out forwards',
       };
     }
 
@@ -170,9 +248,7 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
         className={className}
         onMouseDown={(e) => handlePointerDown(e, r, c)}
         onTouchStart={(e) => handlePointerDown(e.touches[0].clientX !== undefined ? e : e, r, c)}
-        onClick={() => {
-          if (!dragging) onSquareClick(r, c);
-        }}
+        onClick={() => handleSquareClick(r, c)}
       >
         {showRankLabel && (
           <span className={`coord-label rank-label ${isLight ? 'coord-dark' : 'coord-light'}`}>
@@ -216,9 +292,35 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
     );
   }
 
+  // Calculate promotion modal position
+  let promoPos = null;
+  let promoDirection = 'down';
+  if (pendingPromotion) {
+    promoPos = getPromotionPosition(pendingPromotion.toRow, pendingPromotion.toCol);
+    // If promoting on rank 8 (row 0), expand downward; on rank 1 (row 7), expand upward
+    const displayRow = isFlipped ? 7 - pendingPromotion.toRow : pendingPromotion.toRow;
+    promoDirection = displayRow < 4 ? 'down' : 'up';
+    if (promoDirection === 'up') {
+      // Adjust position: anchor at bottom of the square
+      const rect = boardRef.current?.getBoundingClientRect();
+      if (rect) {
+        const squareSize = rect.width / 8;
+        promoPos.y = promoPos.y + squareSize - (75 * 4); // 4 options × 75px each
+      }
+    }
+  }
+
   return (
     <div className="board-container" ref={boardRef}>
+      {/* Hidden SVG preload — forces browser to parse all piece paths on mount */}
+      <div className="piece-preload" aria-hidden="true">
+        {ALL_PIECE_KEYS.map(key => (
+          <div key={key} dangerouslySetInnerHTML={{ __html: PIECE_SVG[key] }} />
+        ))}
+      </div>
+
       {rows}
+
       {/* Floating drag ghost */}
       {dragging && dragPos && (
         <div 
@@ -232,8 +334,20 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
             pointerEvents: 'none',
             zIndex: 1000,
             filter: 'drop-shadow(0 6px 12px rgba(0,0,0,0.6))',
+            transform: 'scale(1.15)',
           }}
           dangerouslySetInnerHTML={{ __html: PIECE_SVG[dragging.piece.color + dragging.piece.type] }}
+        />
+      )}
+
+      {/* Promotion modal */}
+      {pendingPromotion && promoPos && (
+        <PromotionModal
+          color={pendingPromotion.color}
+          position={promoPos}
+          direction={promoDirection}
+          onSelect={handlePromotionSelect}
+          onCancel={handlePromotionCancel}
         />
       )}
     </div>

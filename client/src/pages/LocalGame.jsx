@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Board from '../components/Board';
 import Navbar from '../components/Navbar';
+import GameTools from '../components/GameTools';
 import { ChessEngine } from '../game/chess-engine';
 import { ProgressiveGame } from '../game/progressive';
 import { playMoveSound, playCaptureSound, playCheckSound, playGameEndSound } from '../game/sounds';
@@ -35,6 +36,8 @@ export default function LocalGame() {
     if (selectedSquare) {
       const move = validMoves.find(m => m.to.row === r && m.to.col === c);
       if (move) {
+        // Don't execute promotion moves here — Board handles them via onPromotion
+        if (move.promotion) return;
         executeMove(selectedSquare.row, selectedSquare.col, r, c, move);
         return;
       }
@@ -55,17 +58,21 @@ export default function LocalGame() {
     const moves = game.getLegalMoves(fromRow, fromCol);
     const move = moves.find(m => m.to.row === toRow && m.to.col === toCol);
     if (move) {
+      // Don't execute promotion moves here — Board handles them via onPromotion
+      if (move.promotion) return;
       executeMove(fromRow, fromCol, toRow, toCol, move);
     }
   }, [game, turnInfo]);
 
-  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move) => {
-    let promotion = null;
-    if (move.promotion) {
-      promotion = 'Q';
-    }
+  const handlePromotion = useCallback((fromRow, fromCol, toRow, toCol, pieceType) => {
+    if (!game || turnInfo?.gameOver) return;
+    executeMove(fromRow, fromCol, toRow, toCol, null, pieceType);
+  }, [game, turnInfo]);
 
-    const record = game.makeMove({ row: fromRow, col: fromCol }, { row: toRow, col: toCol }, promotion);
+  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
+    const promoType = promotion || (move?.promotion ? move.promotion : null);
+
+    const record = game.makeMove({ row: fromRow, col: fromCol }, { row: toRow, col: toCol }, promoType);
     if (record) {
       setBoardData(game.engine.toJSON());
       const newTurnInfo = game.getTurnInfo();
@@ -101,6 +108,31 @@ export default function LocalGame() {
     }
   };
 
+  /* ── FEN Load ── */
+  const handleFENLoad = useCallback((fen) => {
+    if (!game) return;
+    // Reload game state from the engine (which was already updated by GameTools)
+    setBoardData(game.engine.toJSON());
+    setTurnInfo(game.getTurnInfo());
+    setLastMove(null);
+    setSelectedSquare(null);
+    setValidMoves([]);
+  }, [game]);
+
+  /* ── Algebraic Notation Move ── */
+  const handleNotationMove = useCallback((from, to, promotion) => {
+    if (!game || turnInfo?.gameOver) return;
+
+    const moves = game.getLegalMoves(from.row, from.col);
+    const move = moves.find(m =>
+      m.to.row === to.row && m.to.col === to.col &&
+      ((!promotion && !m.promotion) || m.promotion === promotion)
+    );
+    if (move) {
+      executeMove(from.row, from.col, to.row, to.col, move, promotion);
+    }
+  }, [game, turnInfo, executeMove]);
+
   const checkColor = turnInfo && !turnInfo.gameOver && game && game.engine
     ? (game.engine.isInCheck('w') ? 'w' : game.engine.isInCheck('b') ? 'b' : null)
     : null;
@@ -111,9 +143,13 @@ export default function LocalGame() {
     return null;
   }
 
-  // Board is always oriented to white for hotseat, or you can rotate it
-  // Let's just keep it 'w' oriented
+  // Board is always oriented to white for hotseat
   const boardColor = 'w';
+
+  // Determine PGN result string
+  const pgnResult = isGameOver
+    ? (turnInfo.gameResult?.winner === 'w' ? '1-0' : turnInfo.gameResult?.winner === 'b' ? '0-1' : '1/2-1/2')
+    : '*';
 
   return (
     <>
@@ -125,10 +161,24 @@ export default function LocalGame() {
             color={boardColor}
             onSquareClick={handleSquareClick}
             onDragMove={handleDragMove}
+            onPromotion={handlePromotion}
             selectedSquare={selectedSquare}
             validMoves={validMoves}
             lastMove={lastMove}
             inCheck={checkColor}
+          />
+
+          {/* Game Tools Panel */}
+          <GameTools
+            engine={game?.engine}
+            game={game}
+            activeColor={turnInfo?.player || 'w'}
+            onFENLoad={handleFENLoad}
+            onMove={handleNotationMove}
+            playerNames={{ w: 'White', b: 'Black' }}
+            gameResult={pgnResult}
+            disableFEN={false}
+            disableNotation={!game || isGameOver}
           />
         </div>
         

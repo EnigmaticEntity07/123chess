@@ -4,6 +4,7 @@ import { io } from 'socket.io-client';
 import Board from '../components/Board';
 import ChessClock from '../components/ChessClock';
 import Navbar from '../components/Navbar';
+import GameTools from '../components/GameTools';
 import { ChessEngine } from '../game/chess-engine';
 import { useAuth } from '../context/AuthContext';
 import { ProgressiveGame } from '../game/progressive';
@@ -143,6 +144,8 @@ export default function Game() {
       // Check if clicked on a valid move
       const move = validMoves.find(m => m.to.row === r && m.to.col === c);
       if (move) {
+        // Don't execute promotion moves here — Board handles them via onPromotion
+        if (move.promotion) return;
         executeMove(selectedSquare.row, selectedSquare.col, r, c, move);
         return;
       }
@@ -167,15 +170,26 @@ export default function Game() {
     const moves = game.getLegalMoves(fromRow, fromCol);
     const move = moves.find(m => m.to.row === toRow && m.to.col === toCol);
     if (move) {
+      // Don't execute promotion moves here — Board handles them via onPromotion
+      if (move.promotion) return;
       executeMove(fromRow, fromCol, toRow, toCol, move);
     }
   }, [game, socket, turnInfo, myColor, gameOverInfo]);
 
-  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move) => {
-    let promotion = null;
-    if (move.promotion) {
-      promotion = 'Q'; // auto-promote to Queen
+  const handlePromotion = useCallback((fromRow, fromCol, toRow, toCol, pieceType) => {
+    if (!game || !socket) return;
+    if (gameOverInfo || turnInfo?.gameOver) return;
+    if (turnInfo?.player !== myColor) return;
+
+    const moves = game.getLegalMoves(fromRow, fromCol);
+    const move = moves.find(m => m.to.row === toRow && m.to.col === toCol && m.promotion === pieceType);
+    if (move) {
+      executeMove(fromRow, fromCol, toRow, toCol, move, pieceType);
     }
+  }, [game, socket, turnInfo, myColor, gameOverInfo]);
+
+  const executeMove = useCallback((fromRow, fromCol, toRow, toCol, move, promotion = null) => {
+    const promoType = promotion || (move.promotion ? move.promotion : null);
 
     // Optimistic UI: apply move locally first
     prevBoardRef.current = boardData;
@@ -185,8 +199,8 @@ export default function Game() {
     const piece = optimisticBoard.board[fromRow][fromCol];
     optimisticBoard.board[toRow][toCol] = piece;
     optimisticBoard.board[fromRow][fromCol] = null;
-    if (promotion && piece) {
-      piece.type = promotion;
+    if (promoType && piece) {
+      piece.type = promoType;
     }
     // Handle en passant removal
     if (move.enPassant) {
@@ -221,7 +235,7 @@ export default function Game() {
       roomId,
       from: { row: fromRow, col: fromCol },
       to: { row: toRow, col: toCol },
-      promotion
+      promotion: promoType
     });
   }, [boardData, socket, roomId]);
 
@@ -244,6 +258,22 @@ export default function Game() {
     setDrawOfferReceived(false);
   };
 
+  // Algebraic notation move handler
+  const handleNotationMove = useCallback((from, to, promotion) => {
+    if (!game || !socket) return;
+    if (gameOverInfo || turnInfo?.gameOver) return;
+    if (turnInfo?.player !== myColor) return;
+
+    const moves = game.getLegalMoves(from.row, from.col);
+    const move = moves.find(m => 
+      m.to.row === to.row && m.to.col === to.col &&
+      ((!promotion && !m.promotion) || m.promotion === promotion)
+    );
+    if (move) {
+      executeMove(from.row, from.col, to.row, to.col, move, promotion);
+    }
+  }, [game, socket, turnInfo, myColor, gameOverInfo, executeMove]);
+
   // Determine check state
   const checkColor = turnInfo && !turnInfo.gameOver && game && game.engine
     ? (game.engine.isInCheck('w') ? 'w' : game.engine.isInCheck('b') ? 'b' : null)
@@ -257,6 +287,11 @@ export default function Game() {
   const bottomColor = myColor;
 
   const isGameOver = gameOverInfo || turnInfo?.gameOver;
+
+  // Determine PGN result string
+  const pgnResult = gameOverInfo
+    ? (gameOverInfo.winner === 'w' ? '1-0' : gameOverInfo.winner === 'b' ? '0-1' : '1/2-1/2')
+    : '*';
 
   if (!boardData) {
     return (
@@ -306,6 +341,7 @@ export default function Game() {
             color={myColor}
             onSquareClick={handleSquareClick}
             onDragMove={handleDragMove}
+            onPromotion={handlePromotion}
             selectedSquare={selectedSquare}
             validMoves={validMoves}
             lastMove={lastMove}
@@ -321,6 +357,18 @@ export default function Game() {
               isPlayer={true}
             />
           )}
+
+          {/* Game Tools Panel */}
+          <GameTools
+            engine={game?.engine}
+            game={game}
+            activeColor={turnInfo?.player || 'w'}
+            onMove={handleNotationMove}
+            playerNames={playerNames}
+            gameResult={pgnResult}
+            disableFEN={true}
+            disableNotation={!game || isGameOver || turnInfo?.player !== myColor}
+          />
         </div>
         
         <div className="sidebar">

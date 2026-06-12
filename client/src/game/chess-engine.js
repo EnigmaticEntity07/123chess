@@ -425,6 +425,172 @@ export class ChessEngine {
   isCheckmate(color) { return this.isInCheck(color) && !this.hasLegalMoves(color); }
   isStalemate(color) { return !this.isInCheck(color) && !this.hasLegalMoves(color); }
 
+  /* ─── FEN Support ─── */
+
+  /**
+   * Generate FEN string from current board state.
+   * @param {string} activeColor - 'w' or 'b'
+   * @param {number} fullMoveNumber - full move counter (default 1)
+   * @returns {string} FEN string
+   */
+  toFEN(activeColor = 'w', fullMoveNumber = 1) {
+    const pieceChar = { K: 'K', Q: 'Q', R: 'R', B: 'B', N: 'N', P: 'P' };
+    
+    // 1. Piece placement
+    const rows = [];
+    for (let r = 0; r < 8; r++) {
+      let row = '';
+      let empty = 0;
+      for (let c = 0; c < 8; c++) {
+        const p = this.board[r][c];
+        if (!p) {
+          empty++;
+        } else {
+          if (empty > 0) { row += empty; empty = 0; }
+          const ch = pieceChar[p.type];
+          row += p.color === 'w' ? ch : ch.toLowerCase();
+        }
+      }
+      if (empty > 0) row += empty;
+      rows.push(row);
+    }
+    const placement = rows.join('/');
+
+    // 2. Active color
+    const active = activeColor;
+
+    // 3. Castling availability
+    let castleStr = '';
+    if (this.castling.wK) castleStr += 'K';
+    if (this.castling.wQ) castleStr += 'Q';
+    if (this.castling.bK) castleStr += 'k';
+    if (this.castling.bQ) castleStr += 'q';
+    if (!castleStr) castleStr = '-';
+
+    // 4. En passant target square
+    const ep = this.enPassant
+      ? ChessEngine.toAlgebraic(this.enPassant.row, this.enPassant.col)
+      : '-';
+
+    // 5. Halfmove clock
+    const halfMove = this.halfMoveClock;
+
+    // 6. Fullmove number
+    const fullMove = fullMoveNumber;
+
+    return `${placement} ${active} ${castleStr} ${ep} ${halfMove} ${fullMove}`;
+  }
+
+  /**
+   * Load board state from a FEN string.
+   * @param {string} fen - Standard FEN string
+   * @returns {boolean} true if parsed successfully
+   */
+  fromFEN(fen) {
+    try {
+      const parts = fen.trim().split(/\s+/);
+      if (parts.length < 1) return false;
+
+      const rows = parts[0].split('/');
+      if (rows.length !== 8) return false;
+
+      const pieceMap = {
+        k: { type: 'K', color: 'b' }, q: { type: 'Q', color: 'b' },
+        r: { type: 'R', color: 'b' }, b: { type: 'B', color: 'b' },
+        n: { type: 'N', color: 'b' }, p: { type: 'P', color: 'b' },
+        K: { type: 'K', color: 'w' }, Q: { type: 'Q', color: 'w' },
+        R: { type: 'R', color: 'w' }, B: { type: 'B', color: 'w' },
+        N: { type: 'N', color: 'w' }, P: { type: 'P', color: 'w' },
+      };
+
+      const newBoard = Array.from({ length: 8 }, () => Array(8).fill(null));
+
+      for (let r = 0; r < 8; r++) {
+        let c = 0;
+        for (const ch of rows[r]) {
+          if (ch >= '1' && ch <= '8') {
+            c += parseInt(ch);
+          } else if (pieceMap[ch]) {
+            newBoard[r][c] = { ...pieceMap[ch] };
+            c++;
+          } else {
+            return false;
+          }
+        }
+        if (c !== 8) return false;
+      }
+
+      this.board = newBoard;
+
+      // Parse castling
+      this.castling = { wK: false, wQ: false, bK: false, bQ: false };
+      if (parts.length > 2 && parts[2] !== '-') {
+        for (const ch of parts[2]) {
+          if (ch === 'K') this.castling.wK = true;
+          if (ch === 'Q') this.castling.wQ = true;
+          if (ch === 'k') this.castling.bK = true;
+          if (ch === 'q') this.castling.bQ = true;
+        }
+      }
+
+      // Parse en passant
+      this.enPassant = null;
+      if (parts.length > 3 && parts[3] !== '-') {
+        this.enPassant = ChessEngine.fromAlgebraic(parts[3]);
+      }
+
+      // Parse halfmove clock
+      this.halfMoveClock = parts.length > 4 ? parseInt(parts[4]) || 0 : 0;
+
+      // Clear move history (FEN is a snapshot, history doesn't apply)
+      this.moveHistory = [];
+
+      this.emit('load');
+      return true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  /**
+   * Generate PGN string from move history.
+   * @param {object} metadata - Optional PGN header fields
+   * @returns {string} PGN text
+   */
+  toPGN(metadata = {}) {
+    const headers = [];
+    const defaults = {
+      Event: '123Chess Game',
+      Site: 'https://123chess.app',
+      Date: new Date().toISOString().split('T')[0].replace(/-/g, '.'),
+      Round: '-',
+      White: metadata.white || 'White',
+      Black: metadata.black || 'Black',
+      Result: metadata.result || '*',
+    };
+
+    const merged = { ...defaults, ...metadata };
+    for (const [key, value] of Object.entries(merged)) {
+      headers.push(`[${key} "${value}"]`);
+    }
+
+    // Build move text
+    const moves = [];
+    for (let i = 0; i < this.moveHistory.length; i++) {
+      const rec = this.moveHistory[i];
+      if (i % 2 === 0) {
+        moves.push(`${Math.floor(i / 2) + 1}.`);
+      }
+      moves.push(rec.notation);
+    }
+
+    if (merged.Result !== '*') {
+      moves.push(merged.Result);
+    }
+
+    return headers.join('\n') + '\n\n' + moves.join(' ') + '\n';
+  }
+
   toJSON() {
     return {
       board:         this.board.map(r => r.map(p => p ? { ...p } : null)),
