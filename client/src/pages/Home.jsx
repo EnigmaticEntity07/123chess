@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import PuzzleHero from '../components/PuzzleHero';
+import { HERO_KNIGHT_SVG } from '../game/pieces';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 
@@ -10,6 +10,38 @@ export default function Home() {
   const { login, user } = useAuth();
   const [isGuestLoading, setIsGuestLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Cursor tracking for spotlight + knight parallax
+  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const knightRef = useRef(null);
+
+  const handleMouseMove = useCallback((e) => {
+    setMousePos({ x: e.clientX, y: e.clientY });
+
+    // Knight 3D tilt effect
+    if (knightRef.current) {
+      const rect = knightRef.current.getBoundingClientRect();
+      const centerX = rect.left + rect.width / 2;
+      const centerY = rect.top + rect.height / 2;
+      const deltaX = (e.clientX - centerX) / (rect.width / 2);
+      const deltaY = (e.clientY - centerY) / (rect.height / 2);
+
+      const rotateY = Math.max(-15, Math.min(15, deltaX * 12));
+      const rotateX = Math.max(-15, Math.min(15, -deltaY * 12));
+
+      knightRef.current.style.transform =
+        `perspective(600px) rotateY(${rotateY}deg) rotateX(${rotateX}deg) scale(1.02)`;
+    }
+  }, []);
+
+  // Mock player count
+  const [playerCount, setPlayerCount] = useState(142);
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlayerCount(prev => prev + Math.floor(Math.random() * 7) - 3);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const handleGuestLogin = async () => {
     setIsGuestLoading(true);
@@ -24,46 +56,48 @@ export default function Home() {
         navigate(redirect);
       } else {
         setError('Guest login failed. Please try again.');
-        console.error('Guest login failed');
       }
     } catch (err) {
-      setError('Cannot reach the server. Make sure the backend is running on ' + API_URL);
-      console.error('Cannot reach the server.', err);
+      setError('Cannot reach the server.');
+      console.error(err);
     } finally {
       setIsGuestLoading(false);
     }
   };
 
   return (
-    <>
-      <div className="ambient-bg">
-        <div className="orb orb-1"></div>
-        <div className="orb orb-2"></div>
+    <div onMouseMove={handleMouseMove}>
+      {/* Interactive cursor-tracking background */}
+      <div className="homepage-bg">
+        <div className="cursor-grid" />
+        <div
+          className="cursor-spotlight"
+          style={{ left: mousePos.x, top: mousePos.y }}
+        />
       </div>
-      
-      <Navbar />
 
       <div className="container" style={{ position: 'relative', zIndex: 1 }}>
+        <Navbar />
+
         <div className="hero-split">
-          
-          {/* Left Column: Typography & Actions */}
+          {/* Left: Typography & CTA */}
           <div className="hero-content">
             <div className="server-status fade-slide-up delay-1">
-              <div className="status-dot"></div>
-              <span>Server Online</span>
+              <div className="status-dot" />
+              <span>{playerCount} players online</span>
             </div>
 
             <h1 className="fade-slide-up delay-2">
-              Find the Winning Move
+              The Chess Experience, Reimagined
             </h1>
-            
+
             <p className="fade-slide-up delay-3">
-              Play our classic progressive variant where turns escalate, or solve the daily puzzle. 
-              <strong> White to move and Mate in 1.</strong> Try it directly on the board!
+              Progressive chess where every turn escalates the tension. 
+              White makes 1 move, Black makes 2, White makes 3 — can you survive the snowball?
             </p>
-            
+
             {error && (
-              <p className="auth-error fade-slide-up delay-3" style={{ marginBottom: '1rem', color: '#ef4444' }}>
+              <p className="auth-error fade-slide-up" style={{ marginBottom: '1rem', color: '#ef4444' }}>
                 {error}
               </p>
             )}
@@ -74,10 +108,10 @@ export default function Home() {
                   <Link to="/register" className="btn-primary" style={{ fontSize: '1.1rem', padding: '14px 28px' }}>
                     Start Playing Free
                   </Link>
-                  <button 
-                    onClick={handleGuestLogin} 
-                    disabled={isGuestLoading} 
-                    className="btn-secondary" 
+                  <button
+                    onClick={handleGuestLogin}
+                    disabled={isGuestLoading}
+                    className="btn-secondary"
                     style={{ fontSize: '1.1rem', padding: '14px 28px', background: 'rgba(255,255,255,0.05)' }}
                   >
                     {isGuestLoading ? 'Connecting...' : 'Play as Guest'}
@@ -91,41 +125,38 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Column: Interactive Puzzle Game */}
+          {/* Right: Floating 3D Knight */}
           <div className="hero-visual fade-slide-up delay-5">
-            <PuzzleHero />
+            <div className="knight-glow" />
+            <div
+              ref={knightRef}
+              className="floating-knight"
+              dangerouslySetInnerHTML={{ __html: HERO_KNIGHT_SVG }}
+            />
           </div>
-
         </div>
 
-        {/* Game Modes Grid */}
-        <div className="modes-grid">
-          <Link to={user ? "/lobby" : "/register"} className="mode-card fade-slide-up delay-2">
-            <div className="mode-icon">⚔️</div>
+        {/* Action Cards */}
+        <div className="action-cards">
+          <Link to={user ? '/lobby' : '/register'} className="action-card fade-slide-up delay-3">
+            <div className="action-card-icon">⚔️</div>
             <h3>Play Online</h3>
-            <p>Challenge players from around the world in real-time matchmaking.</p>
+            <p>Challenge players in real-time progressive chess matches.</p>
           </Link>
-          
-          <Link to="/local" className="mode-card fade-slide-up delay-3">
-            <div className="mode-icon">👥</div>
+
+          <Link to="/local-game" className="action-card fade-slide-up delay-4">
+            <div className="action-card-icon">👥</div>
             <h3>Local Hotseat</h3>
-            <p>Play with a friend on the same device. Perfect for in-person battles.</p>
+            <p>Pass & play with a friend on the same device.</p>
           </Link>
 
-          <div className="mode-card fade-slide-up delay-4" style={{ cursor: 'not-allowed', opacity: 0.8 }}>
-            <div className="mode-icon" style={{ filter: 'grayscale(1)' }}>🤖</div>
+          <div className="action-card disabled fade-slide-up delay-5">
+            <div className="action-card-icon">🤖</div>
             <h3>Play Computer</h3>
-            <p>Coming soon. Test your skills against our advanced progressive engine.</p>
-          </div>
-
-          <div className="mode-card fade-slide-up delay-5" style={{ cursor: 'not-allowed', opacity: 0.8 }}>
-            <div className="mode-icon" style={{ filter: 'grayscale(1)' }}>🧩</div>
-            <h3>Daily Puzzles</h3>
-            <p>Coming soon. Solve complex progressive mates and combinations.</p>
+            <p>Coming soon — test your skills against our engine.</p>
           </div>
         </div>
-
       </div>
-    </>
+    </div>
   );
 }
