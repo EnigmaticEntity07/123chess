@@ -232,7 +232,7 @@ export default function Board({ board, color, onSquareClick, onDragMove, selecte
       pieceStyle = {
         transform: `translate(${animatingPiece.offsetX}px, ${animatingPiece.offsetY}px)`,
         transition: 'none',
-        animation: 'piece-slide 0.15s ease-in-out forwards',
+        animation: 'piece-slide 0.15s linear forwards',
       };
     }
 

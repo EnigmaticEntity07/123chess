@@ -20,26 +20,36 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+function AnimatedRoutes() {
+  const location = useLocation();
+  return (
+    <div key={location.pathname} className="page-transition">
+      <Routes location={location}>
+        <Route path="/" element={<Home />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/local-game" element={<LocalGame />} />
+        <Route path="/local" element={<LocalGame />} />
+        <Route path="/lobby" element={
+          <ProtectedRoute>
+            <Lobby />
+          </ProtectedRoute>
+        } />
+        <Route path="/game/:roomId" element={
+          <ProtectedRoute>
+            <Game />
+          </ProtectedRoute>
+        } />
+      </Routes>
+    </div>
+  );
+}
+
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/local-game" element={<LocalGame />} />
-          <Route path="/lobby" element={
-            <ProtectedRoute>
-              <Lobby />
-            </ProtectedRoute>
-          } />
-          <Route path="/game/:roomId" element={
-            <ProtectedRoute>
-              <Game />
-            </ProtectedRoute>
-          } />
-        </Routes>
+        <AnimatedRoutes />
       </BrowserRouter>
     </AuthProvider>
   );

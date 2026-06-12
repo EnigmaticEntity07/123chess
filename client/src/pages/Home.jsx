@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Navbar from '../components/Navbar';
-import GhostGame from '../components/GhostGame';
+import PuzzleHero from '../components/PuzzleHero';
 import { API_URL } from '../config';
 import { useAuth } from '../context/AuthContext';
 
@@ -54,12 +54,12 @@ export default function Home() {
             </div>
 
             <h1 className="fade-slide-up delay-2">
-              Play Chess Like Never Before
+              Find the Winning Move
             </h1>
             
             <p className="fade-slide-up delay-3">
-              Experience the intense chess variant where each turn grows longer.<br/>
-              White makes 1 move, Black makes 2, White makes 3... Can you survive the escalation?
+              Play our classic progressive variant where turns escalate, or solve the daily puzzle. 
+              <strong> White to move and Mate in 1.</strong> Try it directly on the board!
             </p>
             
             {error && (
@@ -91,9 +91,9 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Right Column: Ghost Game */}
+          {/* Right Column: Interactive Puzzle Game */}
           <div className="hero-visual fade-slide-up delay-5">
-            <GhostGame />
+            <PuzzleHero />
           </div>
 
         </div>
